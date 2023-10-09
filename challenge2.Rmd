@@ -17,11 +17,13 @@ output:
 ---
 
 ## Link to the repository: <https://github.com/mezlulu/Datachallenge>
+
 ```{r options, include=FALSE}
 knitr::opts_chunk$set(cache=FALSE, error=TRUE, message=TRUE, warning=TRUE)
 ```
 
 ## load packages
+
 ```{r}
 library(readr)
 library(lubridate)
@@ -31,25 +33,26 @@ library(dplyr)
 library(tidyr)
 library(stringr)
 library(ggplot2)
+library(RColorBrewer)
 ```
 
 # Problem 1 Mr.Trash Wheel
 
 ```{r}
-mr_trash_wheel <- readxl::read_excel("/Users/lulu/Desktop/data_science_1/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet= 1) %>%
-  janitor::clean_names()%>%
-  filter(!is.na(dumpster))%>%
-  mutate(wheel="Mr. Trash Wheel")%>%
+mr_trash_wheel <- read_excel("/Users/lulu/Desktop/data_science_1/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet= 1) %>%
+  janitor::clean_names() %>%
+  filter(!is.na(dumpster)) %>%
+  mutate(wheel="Mr. Trash Wheel") %>%
   select(-c(15:17)) # get the data from sheet 1 and select all the needed data.
 
-Professor_Trash_Wheel <- readxl::read_excel("/Users/lulu/Desktop/data_science_1/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet= 2) %>%
-  janitor::clean_names()%>%
-  filter(!is.na(dumpster))%>%
-  mutate(wheel="Professor Trash Wheel") #get the data from sheet 2 
+Professor_Trash_Wheel <- read_excel("/Users/lulu/Desktop/data_science_1/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet= 2) %>%
+  janitor::clean_names() %>%
+  filter(!is.na(dumpster)) %>%
+  mutate(wheel="Professor Trash Wheel") # get the data from sheet 2 
 
-Captain_Trash_Wheel <- readxl::read_excel("/Users/lulu/Desktop/data_science_1/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet= 3) %>%
-  janitor::clean_names()%>%
-  filter(!is.na(dumpster))%>%
+Captain_Trash_Wheel <- read_excel("/Users/lulu/Desktop/data_science_1/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet= 3) %>%
+  janitor::clean_names() %>%
+  filter(!is.na(dumpster)) %>%
   mutate(wheel="Captain Trash Wheel") # get the data from sheet 3
 
 all_trash_wheels <- bind_rows(mr_trash_wheel, Professor_Trash_Wheel, Captain_Trash_Wheel) # bind the three dataframes together into one dataframe 
@@ -82,23 +85,27 @@ ggplot(all_trash_wheels_totals_June_2018, aes(x = total_number, y = wheel, fill 
 ```
 
 # Problem 2
+
 Next we will be examining data from FiveThirtyEight on the S&P closing prices and the unemployment rate. For this problem, the data is provided on Canvas. You will need snp.csv and unemployment.csv.
+
 ```{r}
 snp <- read_csv("/Users/lulu/Desktop/data_science_1/snp.csv") # read the snp data
 unemployment <- read_csv("/Users/lulu/Desktop/data_science_1/unemployment.csv") # read the unemployment data
 
-snp <- snp%>%
-  mutate(date=mdy(date), year=year(date), month=month(date),day=day(date)) # convert the date to date object using mdy, create a year and month variable using year and month in package lubridate
+snp <- snp %>%
+  mutate(date=mdy(date), year=year(date), month=month(date),day=day(date)) # convert the date to date object using mdy, create a year month and day variable the package lubridate
 
 snp2 <- snp %>%
-  mutate(year = ifelse(year > 1968, year - 100, year),
-         date = make_date(year, month, day))%>% # correct the date
+  mutate(year = ifelse(year >= 2050, year - 100, year),
+         date = make_date(year, month, day)) # correct the error made by lubridate package
+  
+snp3 <- snp2 %>%
   select(date,close)
 
 unemployment<- unemployment %>%
 pivot_longer(cols = c(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec),
                names_to = "month",
-               values_to = "rate") %>% # Convert the unemployment data into long format.
+               values_to = "rate") %>% # convert the unemployment data into long format
   mutate(day=01)%>% # first day of each month
   mutate(month = recode(month,
   Jan = 1,
@@ -113,47 +120,60 @@ pivot_longer(cols = c(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec
   Oct = 10,
   Nov = 11,
   Dec = 12
-))%>% # convert month names to numbers
+)) %>% # convert month names to numbers
   mutate(date = make_date(Year,month,day))
   
-unemployment2 <- unemployment%>%
+unemployment2 <- unemployment %>%
   select(date,rate)
 
-joined_data <- left_join(snp2, unemployment2, by = "date") # get the data for the plot
+joined_data <- left_join(snp3, unemployment2, by = "date") # get the data for the plot
 
 ggplot(data = joined_data, aes(x = date)) + # plot them on the same plot
   geom_line(aes(y = close, color = "snp")) + # line for the average snp close price
   geom_line(aes(y = rate, color = "rate")) + # line for the unemployment rate
-  labs(title = "S&P Average vs Unemployment Rate",
-       y = "Value", x = "Date") + # labels for the plot
+  labs(title = "S&P Average vs Unemployment Rate",y="close price and rates", x = "Date") + # labels for the plot
   scale_color_manual(values = c("snp" = "blue", "rate" = "red")) +
   theme_minimal() 
 ```
 
 # Problem 3
+
 Next we will examine the direct relationship between the S&P closing prices and the unemployment rate using data from 2000 and onward in a scatterplot.
 
 Instructions:
 
-Use the year and month columns you made in Problem 2 and group_by these columns.
-Calculate the mean closing price for each month and year pair.
-Create a date column that takes the month and year and indicates the first day of the month. (Hint: to create this date column, I used paste() and lubridate::mdy).
-Join the unemployment data with snp_average and filter for data after the start of 2000.
-Make a plot of the S&P closing price versus the unemployment rate for these years. Color the plot by year. Take care to use what we have learned thus far to make an aesthetically pleasing plot!
+Use the year and month columns you made in Problem 2 and group_by these columns. Calculate the mean closing price for each month and year pair. Create a date column that takes the month and year and indicates the first day of the month. (Hint: to create this date column, I used paste() and lubridate::mdy). Join the unemployment data with snp_average and filter for data after the start of 2000. Make a plot of the S&P closing price versus the unemployment rate for these years. Color the plot by year. Take care to use what we have learned thus far to make an aesthetically pleasing plot!
 
 ```{r}
-merged_data <- merge(snp2, unemployment2, by = "date") # get the data for the plot
+snp_average <- snp2 %>%
+  group_by(year, month) %>% 
+  summarise(avg_close = mean(close)) %>%
+  select(year,month,avg_close) %>%
+  filter(year >= 2000) # calculate monthly snp average, and select the data after year 2000
 
-ggplot(data = merged_data, aes(x = date)) + # plot them on the same plot
-  geom_line(aes(y = close, color = "snp")) + # line for the average snp close price
-  geom_line(aes(y = rate, color = "rate")) + # line for the unemployment rate
-  labs(title = "S&P Average vs Unemployment Rate",
-       y = "Value", x = "Date") + # labels for the plot
-  scale_color_manual(values = c("snp" = "blue", "rate" = "red")) +
-  theme_minimal() 
+unemployment3 <- unemployment %>%
+  rename(year=Year) %>% # rename the variable year so that we can join the data together
+  select(year,month,rate) %>%
+  filter(year>=2000) # select the data that has year >= 2000 
+
+merged_data <- snp_average %>%
+  left_join(unemployment3, by =c("year","month")) # join the data together by using left_join and the common variabe year and month
+
+ggplot(merged_data, aes(x = rate, y = avg_close, color = as.factor(year))) +
+  geom_line() +
+  labs(
+    title = "average S&P Closing Price and Unemployment Rate after year 2000",
+    x = "Unemployment Rate",
+    y = "Average S&P Closing Price",
+    color = "Year"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "bottom") # place the legend at the bottom
+
 ```
 
-
-
 # Problem 4
+
 Write a paragraph (at least 5 sentences) describing what you observed in the plots in Problems 2 & 3.
+
+Different conclusions are drawn from a comparison of two plots that show the relationship between the S&P closing price and the unemployment rate. The first plot offers a broad historical perspective, but because of the overwhelming magnitude of the S&P closing prices, its expansive scale somewhat hides the subtle fluctuations in the unemployment rate. The second plot, which only includes data up to the year 2000, offers a clearer viewpoint. The inverse relationship between unemployment and average closing price is more obvious when viewed at a closer distance. Such analyses highlight how important scale and period choice are in data visualization, shedding light on how various representations can highlight broad trends or minute details.
