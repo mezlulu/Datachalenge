@@ -23,6 +23,8 @@ knitr::opts_chunk$set(cache=FALSE, error=TRUE, message=TRUE, warning=TRUE)
 
 ## load packages
 ```{r}
+library(readr)
+library(lubridate)
 library(readxl)
 library(janitor)
 library(dplyr)
@@ -38,87 +40,114 @@ mr_trash_wheel <- readxl::read_excel("/Users/lulu/Desktop/data_science_1/Trash-W
   janitor::clean_names()%>%
   filter(!is.na(dumpster))%>%
   mutate(wheel="Mr. Trash Wheel")%>%
-  select(-c(15:17))
+  select(-c(15:17)) # get the data from sheet 1 and select all the needed data.
 
 Professor_Trash_Wheel <- readxl::read_excel("/Users/lulu/Desktop/data_science_1/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet= 2) %>%
   janitor::clean_names()%>%
   filter(!is.na(dumpster))%>%
-  mutate(wheel="Professor Trash Wheel")
+  mutate(wheel="Professor Trash Wheel") #get the data from sheet 2 
 
 Captain_Trash_Wheel <- readxl::read_excel("/Users/lulu/Desktop/data_science_1/Trash-Wheel-Collection-Totals-8-6-19.xlsx",sheet= 3) %>%
   janitor::clean_names()%>%
   filter(!is.na(dumpster))%>%
-  mutate(wheel="Captain Trash Wheel")
+  mutate(wheel="Captain Trash Wheel") # get the data from sheet 3
 
-all_trash_wheels <- bind_rows(mr_trash_wheel, Professor_Trash_Wheel, Captain_Trash_Wheel)
+all_trash_wheels <- bind_rows(mr_trash_wheel, Professor_Trash_Wheel, Captain_Trash_Wheel) # bind the three dataframes together into one dataframe 
 
 pivot_wheels <- 
   pivot_longer(all_trash_wheels,
     cols = -c(dumpster,month, year,date,wheel),
     names_to = "trash_type",
-    values_to = "number")       
+    values_to = "number")       # long format
 
 all_trash_wheels <- pivot_wheels %>%
   mutate(trash_type = str_replace(trash_type, "_", " ")) %>%
-  mutate(trash_type = str_to_title(trash_type))  
+  mutate(trash_type = str_to_title(trash_type))  # format the column trash_type for plotting.
 
 all_trash_wheels_totals_June_2018 <- all_trash_wheels %>%
-  filter(month == "June", year == 2018) %>%
+  filter(month == "June", year == 2018) %>% # getting the data for only June 2018
   group_by(wheel, trash_type) %>%
-  summarise(total_number = sum(number, na.rm = TRUE))
+  summarise(total_number = sum(number, na.rm = TRUE)) # calculate the total number for each trash item by trash wheel
 
 ggplot(all_trash_wheels_totals_June_2018, aes(x = total_number, y = wheel, fill = wheel)) + #a faceted bar plot (by trash type)
   geom_bar(stat = "identity",position="dodge") +
   facet_wrap(~trash_type,scales="free_x") +
-  theme_minimal() +
   labs(title = "all trash wheels totals by June 2018",
        x = "amount of trash",
        y = "trash wheel",
-       fill = "Trash Wheel") +
-  theme(legend.position = "bottom")
+       fill = "Trash Wheel") + # labels the plots
+  theme(legend.position = "bottom")+
+  theme_minimal() 
 
 ```
 
-
-Create a new dataframe called all_trash_wheels_totals_June_2018 by:
-Filtering the data for only June 2018, and
-Using dplyr::group_by and dplyr::summarise to calculate the total number of each trash item collected by each trash wheel for June 2018.
-Make a faceted bar plot (by trash type) of the amount of trash (x-axis) collected by each wheel (y-axis). Take care to use what we have learned thus far to make an aesthetically pleasing plot!
-
-
-
-
 # Problem 2
 Next we will be examining data from FiveThirtyEight on the S&P closing prices and the unemployment rate. For this problem, the data is provided on Canvas. You will need snp.csv and unemployment.csv.
+```{r}
+snp <- read_csv("/Users/lulu/Desktop/data_science_1/snp.csv") # read the snp data
+unemployment <- read_csv("/Users/lulu/Desktop/data_science_1/unemployment.csv") # read the unemployment data
 
-Instructions:
+snp <- snp%>%
+  mutate(date=mdy(date), year=year(date), month=month(date),day=day(date)) # convert the date to date object using mdy, create a year and month variable using year and month in package lubridate
 
-Read both .csv files in using readr::read_csv.
-First, start with the snp data:
-Convert the date to a date object using lubridate::mdy.
-Note that dates from 1968 and before get converted to 2068 and above! This is the default behavior of lubridate. Come up with a solution to correct this.
-Create a year and month variable using lubridate::year and lubridate::month. (You will use these in Problem 3.)
-Next, work on wrangling the unemployment data.
-Convert the data into long format.
-Create a date column that takes the month and year and indicates the first day of the month. (Hint: to create this date column, I used paste() and lubridate::mdy).
-Plot both the S&P average and the unemployment rate together on the same plot. I found this link helpful! Take care to use what we have learned thus far to make an aesthetically pleasing plot!
+snp2 <- snp %>%
+  mutate(year = ifelse(year > 1968, year - 100, year),
+         date = make_date(year, month, day))%>% # correct the date
+  select(date,close)
 
+unemployment<- unemployment %>%
+pivot_longer(cols = c(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec),
+               names_to = "month",
+               values_to = "rate") %>% # Convert the unemployment data into long format.
+  mutate(day=01)%>% # first day of each month
+  mutate(month = recode(month,
+  Jan = 1,
+  Feb = 2,
+  Mar = 3,
+  Apr = 4,
+  May = 5,
+  Jun = 6,
+  Jul = 7,
+  Aug = 8,
+  Sep = 9,
+  Oct = 10,
+  Nov = 11,
+  Dec = 12
+))%>% # convert month names to numbers
+  mutate(date = make_date(Year,month,day))
+  
+unemployment2 <- unemployment%>%
+  select(date,rate)
 
+joined_data <- left_join(snp2, unemployment2, by = "date") # get the data for the plot
 
+ggplot(data = merged_data, aes(x = date)) + # plot them on the same plot
+  geom_line(aes(y = close, color = "snp")) + # line for the average snp close price
+  geom_line(aes(y = rate, color = "rate")) + # line for the unemployment rate
+  labs(title = "S&P Average vs Unemployment Rate",
+       y = "Value", x = "Date") + # labels for the plot
+  scale_color_manual(values = c("snp" = "blue", "rate" = "red")) +
+  theme_minimal() 
+```
 
 # Problem 3
 Next we will examine the direct relationship between the S&P closing prices and the unemployment rate using data from 2000 and onward in a scatterplot.
 
 Instructions:
 
-Since the unemployment rate is available monthly and the S&P closing prices daily, we need to put these on the same temporal scale.
-Create a new data frame called snp_average.
 Use the year and month columns you made in Problem 2 and group_by these columns.
 Calculate the mean closing price for each month and year pair.
 Create a date column that takes the month and year and indicates the first day of the month. (Hint: to create this date column, I used paste() and lubridate::mdy).
 Join the unemployment data with snp_average and filter for data after the start of 2000.
 Make a plot of the S&P closing price versus the unemployment rate for these years. Color the plot by year. Take care to use what we have learned thus far to make an aesthetically pleasing plot!
 
+```{r}
+snp_average <- snp %>%
+  group_by(year, month) %>%
+  summarize(average_close = mean(close, na.rm = TRUE),.groups="drop") %>%
+  ungroup() %>%
+  mutate(new_date = mdy(paste("01", month, year, sep = "-")))
+```
 
 
 
