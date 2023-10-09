@@ -16,8 +16,6 @@ output:
     toc: no
 ---
 
-# Data challenge 2
-
 ## Link to the repository: <https://github.com/mezlulu/Datachallenge>
 
 ```{r options, include=FALSE}
