@@ -121,7 +121,7 @@ unemployment2 <- unemployment%>%
 
 joined_data <- left_join(snp2, unemployment2, by = "date") # get the data for the plot
 
-ggplot(data = merged_data, aes(x = date)) + # plot them on the same plot
+ggplot(data = joined_data, aes(x = date)) + # plot them on the same plot
   geom_line(aes(y = close, color = "snp")) + # line for the average snp close price
   geom_line(aes(y = rate, color = "rate")) + # line for the unemployment rate
   labs(title = "S&P Average vs Unemployment Rate",
@@ -142,11 +142,15 @@ Join the unemployment data with snp_average and filter for data after the start 
 Make a plot of the S&P closing price versus the unemployment rate for these years. Color the plot by year. Take care to use what we have learned thus far to make an aesthetically pleasing plot!
 
 ```{r}
-snp_average <- snp %>%
-  group_by(year, month) %>%
-  summarize(average_close = mean(close, na.rm = TRUE),.groups="drop") %>%
-  ungroup() %>%
-  mutate(new_date = mdy(paste("01", month, year, sep = "-")))
+merged_data <- merge(snp2, unemployment2, by = "date") # get the data for the plot
+
+ggplot(data = merged_data, aes(x = date)) + # plot them on the same plot
+  geom_line(aes(y = close, color = "snp")) + # line for the average snp close price
+  geom_line(aes(y = rate, color = "rate")) + # line for the unemployment rate
+  labs(title = "S&P Average vs Unemployment Rate",
+       y = "Value", x = "Date") + # labels for the plot
+  scale_color_manual(values = c("snp" = "blue", "rate" = "red")) +
+  theme_minimal() 
 ```
 
 
