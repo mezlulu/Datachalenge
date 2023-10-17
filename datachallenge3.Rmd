@@ -1,0 +1,48 @@
+---
+title: "datachallenge3: Coffee Ratings Data"
+author: "menglu zhao"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+```
+
+Question 1 (40 points) Does the code produce the three tables? Are the tables well organized and aesthetically pleasing? (20 points) How concise is the code? Does the code use iteration and functions when appropriate? (20 points)
+
+Question 2 (40 points) Does the code produce the two scatter plots? Are the scatter plots well made (all scatter plots should have a title, good axes, and legend titles without underscores, etc.)? (20 points) How concise is the code? Does the code use iteration and functions when appropriate? (20 points)
+
+
+
+## load in the libraries 
+library(readr) 
+
+## read in the data 
+coffee_ratings <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+
+
+Problem 1
+Write a function that returns a table with the mean and standard deviation of the columns aroma through moisture of the coffee ratings data for different categories of coffee. Produce the table for (a) species, (b) country of origin, and (c) binned mean altitude in meters.
+
+Write a function that returns the mean and standard deviation of a vector. (Hint: Use paste to return the mean and standard deviation together in a pleasing format.)
+
+Write a function that uses the function defined in the first step and returns the mean and standard deviation of the aroma through moisture columns over a specific grouping as a table (Hint: To make a table in Rmarkdown checkout the function knitr::kable.)
+
+Clean the coffee ratings data frame. This includes putting a ‘Missing’ for NAs for missing values and binning the mean altitude meters variable (checkout the function cut2 for this – and make sure to put any impossible values as missing.)
+
+Using map to calculate tables for the three groups (species, country of origin, binned mean altitude in meters) in one step.
+
+Problem 2
+Write a function that makes a scatterplot of any two variables from the columns aroma through moisture and colors the points by a particular grouping. Make the plot for (1) aroma versus flavor colored by species and (2) balance versus body colored by binned mean altitude. (Hint: Remove outliers to make a more compelling plot!)
+
+Write a function that plots two variables from a data frame and colors by group. (Hint: Use geom_jitter() with alpha blending to make a more aesthetically appealing plot.)
+
+Use pmap to iterate over a list of function arguments to produce two plots:
+
+Aroma versus flavor colored by species
+Balance versus body colored by binned mean altitude
