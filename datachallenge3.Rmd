@@ -11,19 +11,57 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+library(dplyr)
 ```
 
 Question 1 (40 points) Does the code produce the three tables? Are the tables well organized and aesthetically pleasing? (20 points) How concise is the code? Does the code use iteration and functions when appropriate? (20 points)
+
+```{r}
+group_vars <- c("species", "country_of_origin", "altitude_mean_meters") # these are the variables that we are interested in, and we want to generate a table for these variable.
+
+selected_columns <- c("aroma", "flavor", "aftertaste", "acidity", "body", "balance", "uniformity", "clean_cup", "sweetness", "cupper_points", "moisture") # these are the variable that we want the mean and standard deviation of.
+
+all_needed_columns <- c(group_vars, selected_columns) # these are all the variables needed to write the function
+
+coffee_subset <- select(coffee_ratings, one_of(all_needed_columns)) # put all those variable in a new data set.
+
+function1 <- function(data, group_var) {
+  result <- data %>%
+    group_by(!!sym(group_var)) %>% # !! read the variables as column
+    summarise(
+      across( # this function apply the same action to multiple columns
+        .cols = all_of(selected_columns), # specify the columns for summary
+        .fns = list(mean = ~mean(., na.rm = TRUE), sd = ~sd(., na.rm = TRUE)) # a list of functions we want to use, in this case we want mean and standard deviation.
+      )
+    )
+  return(result)
+}
+
+coffee_subset <- coffee_subset %>%
+  mutate(altitude = cut(altitude_mean_meters, 
+        breaks = c(-Inf, 1000, 2000, 3000, 4000, Inf), 
+        labels = c("Low", "Below Average", "Average", "Above Average", "High"))) # binning the variable mean altitude by 1000 meters.
+
+species_summary <- function1(coffee_subset, "species") # summary table for species
+
+country_summary <- function1(coffee_subset, "country_of_origin") # summary table based on origin
+
+altitude_summary <- function1(coffee_subset, "altitude") # summary table based on the altitude bin
+
+# print out the results
+print(species_summary)
+print(country_summary)
+print(altitude_summary)
+
+```
 
 Question 2 (40 points) Does the code produce the two scatter plots? Are the scatter plots well made (all scatter plots should have a title, good axes, and legend titles without underscores, etc.)? (20 points) How concise is the code? Does the code use iteration and functions when appropriate? (20 points)
 
 
 
 ## load in the libraries 
-library(readr) 
 
-## read in the data 
-coffee_ratings <- read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+
 
 
 Problem 1
