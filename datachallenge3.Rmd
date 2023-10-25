@@ -11,23 +11,28 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 coffee_ratings <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-07-07/coffee_ratings.csv')
+library(tidyverse)
 library(dplyr)
+library(purrr)
+library(knitr)
+library(ggplot2)
+library(Hmisc)
 ```
-
-Question 1 (40 points) Does the code produce the three tables? Are the tables well organized and aesthetically pleasing? (20 points) How concise is the code? Does the code use iteration and functions when appropriate? (20 points)
+## Problem 1 Write a function that returns a table with the mean and standard deviation of the columns aroma through moisture of the coffee ratings data for different categories of coffee. Produce the table for (a) species, (b) country of origin, and (c) binned mean altitude in meters.
 
 ```{r}
+coffee_clean <- coffee_ratings %>%
+  filter(!is.na(altitude_mean_meters)) %>% # remove all the observation that dont have the altitude_mean_meters
+  mutate(across(where(is.character), ~replace_na(., "Missing")),  # putting a 'Missing' for NAs
+  altitude_binned = cut2(altitude_mean_meters, cuts = c(0, 1000, 2000, 3000, 4000)))  # binning the variable mean altitude by 1000 meters using cut2
+
 group_vars <- c("species", "country_of_origin", "altitude_mean_meters") # these are the variables that we are interested in, and we want to generate a table for these variable.
 
 selected_columns <- c("aroma", "flavor", "aftertaste", "acidity", "body", "balance", "uniformity", "clean_cup", "sweetness", "cupper_points", "moisture") # these are the variable that we want the mean and standard deviation of.
 
-all_needed_columns <- c(group_vars, selected_columns) # these are all the variables needed to write the function
-
-coffee_subset <- select(coffee_ratings, one_of(all_needed_columns)) # put all those variable in a new data set.
-
 function1 <- function(data, group_var) {
   result <- data %>%
-    group_by(!!sym(group_var)) %>% # !! read the variables as column
+    group_by(across(all_of(group_var))) %>% # !! read the variables as column
     summarise(
       across( # this function apply the same action to multiple columns
         .cols = all_of(selected_columns), # specify the columns for summary
@@ -37,50 +42,9 @@ function1 <- function(data, group_var) {
   return(result)
 }
 
-coffee_subset <- coffee_subset %>%
-  mutate(altitude = cut(altitude_mean_meters, 
-        breaks = c(-Inf, 1000, 2000, 3000, 4000, Inf), 
-        labels = c("Low", "Below Average", "Average", "Above Average", "High"))) # binning the variable mean altitude by 1000 meters.
-
-species_summary <- function1(coffee_subset, "species") # summary table for species
-
-country_summary <- function1(coffee_subset, "country_of_origin") # summary table based on origin
-
-altitude_summary <- function1(coffee_subset, "altitude") # summary table based on the altitude bin
-
-# print out the results
-print(species_summary)
-print(country_summary)
-print(altitude_summary)
-
+summaries <- map(c("species", "country_of_origin", "altitude_binned"), # these are the variables that we are interested in, and we want to generate a table for these variable.
+                 ~function1(coffee_clean, .x) %>% # using the function we create
+                   kable(caption = paste("Summary for", .x)))  # using kable to create tables
+summaries
 ```
 
-Question 2 (40 points) Does the code produce the two scatter plots? Are the scatter plots well made (all scatter plots should have a title, good axes, and legend titles without underscores, etc.)? (20 points) How concise is the code? Does the code use iteration and functions when appropriate? (20 points)
-
-
-
-## load in the libraries 
-
-
-
-
-Problem 1
-Write a function that returns a table with the mean and standard deviation of the columns aroma through moisture of the coffee ratings data for different categories of coffee. Produce the table for (a) species, (b) country of origin, and (c) binned mean altitude in meters.
-
-Write a function that returns the mean and standard deviation of a vector. (Hint: Use paste to return the mean and standard deviation together in a pleasing format.)
-
-Write a function that uses the function defined in the first step and returns the mean and standard deviation of the aroma through moisture columns over a specific grouping as a table (Hint: To make a table in Rmarkdown checkout the function knitr::kable.)
-
-Clean the coffee ratings data frame. This includes putting a ‘Missing’ for NAs for missing values and binning the mean altitude meters variable (checkout the function cut2 for this – and make sure to put any impossible values as missing.)
-
-Using map to calculate tables for the three groups (species, country of origin, binned mean altitude in meters) in one step.
-
-Problem 2
-Write a function that makes a scatterplot of any two variables from the columns aroma through moisture and colors the points by a particular grouping. Make the plot for (1) aroma versus flavor colored by species and (2) balance versus body colored by binned mean altitude. (Hint: Remove outliers to make a more compelling plot!)
-
-Write a function that plots two variables from a data frame and colors by group. (Hint: Use geom_jitter() with alpha blending to make a more aesthetically appealing plot.)
-
-Use pmap to iterate over a list of function arguments to produce two plots:
-
-Aroma versus flavor colored by species
-Balance versus body colored by binned mean altitude
