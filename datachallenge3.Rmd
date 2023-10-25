@@ -18,6 +18,8 @@ library(knitr)
 library(ggplot2)
 library(Hmisc)
 ```
+## github link https://github.com/mezlulu/Datachallenge
+
 ## Problem 1 Write a function that returns a table with the mean and standard deviation of the columns aroma through moisture of the coffee ratings data for different categories of coffee. Produce the table for (a) species, (b) country of origin, and (c) binned mean altitude in meters.
 
 ```{r}
