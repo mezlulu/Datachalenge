@@ -48,3 +48,29 @@ summaries <- map(c("species", "country_of_origin", "altitude_binned"), # these a
 summaries
 ```
 
+## Problem 2 Write a function that makes a scatterplot of any two variables from the columns aroma through moisture and colors the points by a particular grouping. Make the plot for (1) aroma versus flavor colored by species and (2) balance versus body colored by binned mean altitude. (Hint: Remove outliers to make a more compelling plot!)
+
+```{r}
+scatterplot <- function(x_var, y_var, color_group) {
+  coffee_clean <- coffee_clean %>%
+  filter(between(coffee_clean[[x_var]], quantile(coffee_clean[[x_var]], 0.05), quantile(coffee_clean[[x_var]], 0.95)),
+           between(coffee_clean[[y_var]], quantile(coffee_clean[[y_var]], 0.05), quantile(coffee_clean[[y_var]], 0.95))) # avoid the outliers
+  remove_ <- function(title) {
+  return(gsub("_", " ", title))
+  }
+   ggplot(coffee_clean, aes_string(x = x_var, y = y_var, color = color_group)) + # plots two variables from a data frame and colors by group
+    geom_jitter(alpha = 0.6) +  # use geom_jitter to make a more aesthetically plot
+    labs(
+      title = paste("Scatterplot of", x_var, "versus", y_var),
+      x = x_var,
+      y = y_var,
+      color = remove_(color_group)
+    ) 
+}
+arguments <- data.frame(x_var = c("aroma", "balance"),  y_var = c("flavor", "body"), color_group = c("species", "altitude_binned")) # parameters for the two plots.
+
+pmap(arguments, scatterplot) 
+# same as scatterplot(data=coffee_clean, x_var="aroma", y_var="flavor",color_group= "species")
+# scatterplot(data=coffee_clean, x_var="balance", y_var="body",color_group= "altitude_binned") but now using a pmap functions to iterate over a list of function arguments
+```
+
